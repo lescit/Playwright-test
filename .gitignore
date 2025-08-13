@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+
+# Virtuelle Umgebungen
+.venv/
+env/
+venv/
+
+# Playwright/pytest Ausgaben
+report.html
+trace.zip
+*.log
+*.trace
+playwright-report/
+test-results/
+
+# Betriebssystem Dateien
+.DS_Store
+Thumbs.db
+
+# IDE/Editor Ordner
+.vscode/
+.idea/
+
+# Cache
+.cache/
+pytest_cache/
