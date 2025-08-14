@@ -20,10 +20,9 @@ Die Tests sind auf **Stabilität**, **Nachvollziehbarkeit** und **Wartbarkeit** 
 
 1. **Testkonzept-Erstellung**  
    Vor der Implementierung wurde ein Testplan entworfen:  
-   - Testbereiche festgelegt (Smoke, Links, Accessibility, Performance)
-   - Priorisierung kritischer Pfade (Hero-Bereich, primärer CTA, rechtliche Links)
-   - Risiken identifiziert (z. B. dynamisches Laden, Cookie-Banner, Lazy-Content)
-   - Entscheidung, externe Links (z. B. Social Media) **nicht** hart zu prüfen → im README dokumentiert („Out of Scope“)
+   - Testbereiche festgelegt (Smoke, Links, Accessibility, Performance)  
+   - Priorisierung kritischer Pfade (Hero-Bereich, primärer CTA, rechtliche Links)  
+   - Risiken identifiziert (z. B. dynamisches Laden, Cookie-Banner, Lazy-Content)  
 
 2. **Struktur & Architektur**  
    - **Page Object Model**: Wiederverwendbare Page-Klassen (z. B. `HomePage`) mit klar definierten Methoden  
@@ -36,53 +35,53 @@ Die Tests sind auf **Stabilität**, **Nachvollziehbarkeit** und **Wartbarkeit** 
    - Vorrang für **semantische Selektoren** (`get_by_role`, `aria-label`, `name`)  
    - Fallbacks mit `locator()` und Attributmustern (`[href*='kontakt']`)  
    - Defensive Abfragen (`.count()` vor `click()`/`expect()`)  
-   - Scroll-Mechanismen und Wartezeiten für Lazy-Content
+   - Scroll-Mechanismen und Wartezeiten für Lazy-Content  
 
 4. **Wait-Strategie**  
    - Grundsätzlich `wait_until="domcontentloaded"` oder `networkidle` bei Navigation  
    - Für dynamische Elemente gezielte `page.wait_for_selector()`  
-   - Keine unnötigen globalen Sleeps
+   - Keine unnötigen globalen Sleeps  
 
 5. **Performance-Budget**  
    - Messung von Navigation Timing Metrics (TTFB, DOMContentLoaded, Load)  
    - Definierte Schwellenwerte für erste Orientierung  
-   - Leichtgewichtige Umsetzung ohne externe Tools
+   - Leichtgewichtige Umsetzung ohne externe Tools  
 
 6. **Accessibility-Sanity**  
    - Prüfung auf Vorhandensein von Landmarken oder strukturellen Überschriften  
-   - Optional-Check, keine harten Blocker → informiert im Report
+   - Kein fester Check auf Link-Namen mehr, da karma.de aktuell keine Navigationselemente mit Links enthält  
+   - Test schlägt nur fehl, wenn keinerlei strukturelle oder interaktive Elemente vorhanden sind  
 
 ---
 
 ## Testumfang
 
 ### Desktop
-### Desktop
-- **Hero-Bereich & CTA**: Der Test zur Sichtbarkeit und Funktion wird aktuell **übersprungen**, 
-  da der Hero-Text auf der Seite nicht semantisch als Heading (z. B. `<h1>` oder `role="heading"`) 
-  ausgezeichnet ist und daher für Screenreader nicht verfügbar ist.
-- **Footer-Links**: „Impressum“ und „Datenschutz“ erreichbar und korrekt
-- **Interne Links Scan**: Alle internen Links erreichbar (HTTP 200)
-- **Accessibility-Sanity**: Grundstruktur vorhanden
-- **Performance-Budget**: Basiswerte im Rahmen
+- **Hero-Bereich & CTA**: Der Test zur Sichtbarkeit und Funktion wird aktuell **übersprungen**,  
+  da der Hero-Text auf der Seite nicht semantisch als Heading (z. B. `<h1>` oder `role="heading"`)  
+  ausgezeichnet ist und daher für Screenreader nicht verfügbar ist.  
+- **Footer-Links**: „Impressum“ und „Datenschutz“ erreichbar und korrekt  
+- **Interne Links Scan**: Alle internen Links erreichbar (HTTP 200)  
+- **Accessibility-Sanity**: Prüft, ob die Seite eine semantische Grundstruktur (Titel oder Überschrift) 
+  und mindestens ein interaktives/strukturelles Element enthält. 
+- **Performance-Budget**: Basiswerte im Rahmen  
 
 ### Mobile
-- Smoke-Test: Basis-Navigation & wichtige Elemente auf mobilen Viewports
-
+- **Mobile Smoke-Test**: Öffnet die Startseite im mobilen Viewport, akzeptiert Cookies und prüft das Vorhandensein zentraler Seitenelemente.
 ---
 
 ## Out of Scope
-- Externe Links (z. B. Social Media) werden **nicht** hart geprüft (flaky)
-- Tiefgehende Accessibility-Prüfung mit Axe oder Lighthouse
-- Vollständige visuelle Regressionstests
-- Carousel-Funktionalität (nicht vorhanden auf karma.de)
+- Externe Links (z. B. Social Media) werden **nicht** hart geprüft (flaky)  
+- Tiefgehende Accessibility-Prüfung mit Axe oder Lighthouse  
+- Vollständige visuelle Regressionstests  
+ 
 
 ---
 
 ## Voraussetzungen
-- Python 3.9+
-- Node.js (für Playwright-Installationen)
-- Playwright Python-Bibliothek
+- Python 3.9+  
+- Node.js (für Playwright-Installationen)  
+- Playwright Python-Bibliothek  
 
 ---
 
@@ -103,6 +102,7 @@ pip install -r requirements.txt
 playwright install
 ```
 ## Ausführung
+
 ```bash
 # Alle Tests ausführen
 pytest
@@ -115,7 +115,14 @@ pytest --html=report.html
 
 # Debugging von Skipped Tests:
 pytest -rs
+
+# Debugging von xfailed Tests:
+pytest -rx
 ```
+---
+## Testergebnisse
+Aktueller Status: 7 von 8 Tests bestanden, 1 übersprungen
+- Der übersprungene Test (`test_hero_and_cta`) liegt daran, dass der Hero-Text nicht semantisch als Heading ausgezeichnet ist
 
 ---
 ## Erweiterungspotential
@@ -125,5 +132,7 @@ pytest -rs
 - Visual Regression Testing
 - API-Tests für Backend-Validierung
 
+
 ## Autor
 Erstellt von Lennard Schatz
+
