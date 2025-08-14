@@ -1,124 +1,129 @@
-# Karma.de Playwright Test Suite
+# Karma.de – Playwright Test Suite
 
-## 📌 Überblick
-Dieses Projekt enthält eine automatisierte Test-Suite für die Webseite **karma.de**, entwickelt mit [Playwright](https://playwright.dev/).  
-Der Zweck ist die **Qualitätsprüfung** der öffentlichen Homepage (`/home`) unter den Gesichtspunkten:
-
-- Funktionalität
-- Performance
-- Barrierefreiheit
-- Stabilität
-
-Die Umsetzung basiert auf einem **schrittweisen Testkonzept**, das speziell für diese Aufgabe erstellt wurde, um die Tests **strukturiert, erweiterbar und robust** zu halten.
+## Überblick
+Dieses Repository enthält eine automatisierte **End-to-End Test Suite** für die Website [karma.de](https://www.karma.de), implementiert mit [Playwright](https://playwright.dev).  
+Die Tests sind auf **Stabilität**, **Nachvollziehbarkeit** und **Wartbarkeit** optimiert.
 
 ---
 
-## 📂 Projektstruktur
-karma-playwright/
-│
-├── pages/ # Page Object Dateien (robuste Locator-Strategie)
-│ └── home_page.py
-│
-├── tests/ # Testfälle gruppiert nach Funktionsbereich
-│ └── home/
-│ ├── test_home_hero_footer.py
-│ ├── test_home_links_scan.py
-│ ├── test_a11y_sanity.py
-│ ├── test_home_performance.py
-│
-├── report.html # Automatisch generierter HTML-Report (pytest-html)
-├── requirements.txt # Python-Abhängigkeiten
-└── README.md # Diese Datei
+## Zielsetzung
+- Abdeckung zentraler Use-Cases (Desktop & Mobile)
+- Überprüfung funktionaler Kernelemente wie Navigation, CTAs und Footer-Links
+- Basisprüfung auf Accessibility und Performance
+- Umsetzung einer robusten Locator-Strategie
+- Minimierung von Flaky-Tests durch sinnvolle Waits, Timeouts und Fallbacks
+- Strukturierte und nachvollziehbare Projektarchitektur
 
 ---
 
-## 🧠 Vorgehensweise & Überlegungen
+## Vorgehensweise & Entscheidungsgrundlagen
 
-### 1. Testkonzept-Erstellung
-- **Priorisierung:** Zuerst kritische Smoke-Tests, danach Detailprüfungen.
-- **Breite Abdeckung:** Hero-Elemente, Navigation, interne Links, Performance, Accessibility.
-- **Robuste Locator-Strategie:** Primär semantische Selektoren (`get_by_role`), Fallbacks für dynamische Inhalte.
-- **Erweiterbarkeit:** Modular durch **Page Object Pattern**, einfache Ergänzung neuer Tests.
+1. **Testkonzept-Erstellung**  
+   Vor der Implementierung wurde ein Testplan entworfen:  
+   - Testbereiche festgelegt (Smoke, Links, Accessibility, Performance)
+   - Priorisierung kritischer Pfade (Hero-Bereich, primärer CTA, rechtliche Links)
+   - Risiken identifiziert (z. B. dynamisches Laden, Cookie-Banner, Lazy-Content)
+   - Entscheidung, externe Links (z. B. Social Media) **nicht** hart zu prüfen → im README dokumentiert („Out of Scope“)
 
-> Vorteil: Jeder Test kann einzeln angepasst oder erweitert werden, ohne andere Tests zu destabilisieren.
+2. **Struktur & Architektur**  
+   - **Page Object Model**: Wiederverwendbare Page-Klassen (z. B. `HomePage`) mit klar definierten Methoden  
+   - **tests/**: Fachlich gruppierte Tests (Desktop / Mobile)  
+   - **pages/**: Lokatoren & Interaktionsmethoden  
+   - **conftest.py**: Pytest-Fixtures für Browser-Setup, gemeinsame Helfer  
+   - **pytest.ini**: Globale Konfiguration  
 
----
+3. **Locator-Strategie (Robustheit)**  
+   - Vorrang für **semantische Selektoren** (`get_by_role`, `aria-label`, `name`)  
+   - Fallbacks mit `locator()` und Attributmustern (`[href*='kontakt']`)  
+   - Defensive Abfragen (`.count()` vor `click()`/`expect()`)  
+   - Scroll-Mechanismen und Wartezeiten für Lazy-Content
 
-### 2. Umsetzung in Playwright
-#### **Page Object Pattern**
-- Saubere Trennung zwischen Testlogik und Element-Lokalisierung.
-- Beispiel: Cookie-Banner-Handling nur einmal zentral implementiert.
+4. **Wait-Strategie**  
+   - Grundsätzlich `wait_until="domcontentloaded"` oder `networkidle` bei Navigation  
+   - Für dynamische Elemente gezielte `page.wait_for_selector()`  
+   - Keine unnötigen globalen Sleeps
 
-#### **wait_until-Strategie**
-- Standard: `domcontentloaded` für schnelle Tests.
-- `networkidle` für Seiten mit Lazy Loading.
+5. **Performance-Budget**  
+   - Messung von Navigation Timing Metrics (TTFB, DOMContentLoaded, Load)  
+   - Definierte Schwellenwerte für erste Orientierung  
+   - Leichtgewichtige Umsetzung ohne externe Tools
 
-#### **Fallback-Checks**
-- Alternative Selektoren oder Scroll-Mechanismen, wenn Elemente nicht gefunden werden.
-
----
-
-### 3. Performance-Checks
-Ein leichter Performance-Test auf Basis der **Navigation Timing API** prüft:
-- **First Contentful Paint (FCP)**
-- **DOMContentLoaded (DCL)**
-- **Gesamtladezeit**
-
-Es wird ein **Mini-Budget** definiert, um Ausreißer schnell zu erkennen.
-
----
-
-### 4. Accessibility-Sanity
-Kein vollumfänglicher WCAG-Test, sondern eine **Sanity-Prüfung**:
-- Landmarken oder alternative Navigierbarkeits-Indikatoren.
-- Vorhandensein von Headings oder `<title>`.
-- Sichtbare Links/Buttons.
-
-> Fehlende Landmarken führen nicht zu einem harten Fail, sondern zu informativen Hinweisen.
+6. **Accessibility-Sanity**  
+   - Prüfung auf Vorhandensein von Landmarken oder strukturellen Überschriften  
+   - Optional-Check, keine harten Blocker → informiert im Report
 
 ---
 
-### 5. Robustheit
-- Fallback-Strategien bei dynamischen Inhalten.
-- Automatisches Scrollen, wenn Elemente erst später geladen werden.
-- Externe Links werden **nicht hart geprüft**, um Flakiness zu vermeiden (siehe *Out of Scope*).
+## Testumfang
+
+### Desktop
+### Desktop
+- **Hero-Bereich & CTA**: Der Test zur Sichtbarkeit und Funktion wird aktuell **übersprungen**, 
+  da der Hero-Text auf der Seite nicht semantisch als Heading (z. B. `<h1>` oder `role="heading"`) 
+  ausgezeichnet ist und daher für Screenreader nicht verfügbar ist.
+- **Footer-Links**: „Impressum“ und „Datenschutz“ erreichbar und korrekt
+- **Interne Links Scan**: Alle internen Links erreichbar (HTTP 200)
+- **Accessibility-Sanity**: Grundstruktur vorhanden
+- **Performance-Budget**: Basiswerte im Rahmen
+
+### Mobile
+- Smoke-Test: Basis-Navigation & wichtige Elemente auf mobilen Viewports
 
 ---
 
-## ⚙️ Installation & Ausführung
+## Out of Scope
+- Externe Links (z. B. Social Media) werden **nicht** hart geprüft (flaky)
+- Tiefgehende Accessibility-Prüfung mit Axe oder Lighthouse
+- Vollständige visuelle Regressionstests
+- Carousel-Funktionalität (nicht vorhanden auf karma.de)
 
-### 1. Umgebung einrichten
+---
+
+## Voraussetzungen
+- Python 3.9+
+- Node.js (für Playwright-Installationen)
+- Playwright Python-Bibliothek
+
+---
+
+## Installation
 ```bash
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+# Repository klonen
+git clone https://github.com/lescit/Playwright-test.git
+cd Playwright-test
+
+# Virtuelle Umgebung erstellen
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Abhängigkeiten installieren
 pip install -r requirements.txt
+
+# Playwright-Browser installieren
 playwright install
-2. Tests ausführen
-pytest --html=report.html --self-contained-html
-➡ HTML-Report wird in report.html generiert.
-🚫 Out of Scope
-Externe Links: Nicht geprüft, um Instabilität durch externe Server zu vermeiden.
-Carousels/Slider: Nicht getestet, da auf /home aktuell nicht vorhanden.
-Vollständige WCAG-Prüfung: Nur Sanity-Check, vollständiger Audit könnte mit axe-core integriert werden.
-🔮 Weiterentwicklung
-CI-Integration: Empfohlene GitHub Actions Pipeline:
-name: Playwright Tests
-on: [push]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-      - run: pip install -r requirements.txt
-      - run: playwright install
-      - run: pytest --html=report.html --self-contained-html
-Browser-Matrix: Tests zusätzlich in Firefox und WebKit ausführen.
-Tiefe Link-Scans: Optional Tiefe >1 zur Erkennung toter interner Links.
-👤 Autor
-Lennard Schatz
+```
+## Ausführung
+```bash
+# Alle Tests ausführen
+pytest
+
+# Nur einen bestimmten Ordner
+pytest tests/home
+
+# Mit HTML-Report
+pytest --html=report.html
+
+# Debugging von Skipped Tests:
+pytest -rs
+```
 
 ---
+## Erweiterungspotential
+- Integration in CI/CD (z. B. GitHub Actions, Jenkins)
+- Erweitertes Performance-Budget mit Lighthouse
+- Vollständige Accessibility-Analyse
+- Visual Regression Testing
+- API-Tests für Backend-Validierung
 
+## Autor
+Erstellt von Lennard Schatz

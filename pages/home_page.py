@@ -1,88 +1,44 @@
-# pages/home_page.py
 import re
-from playwright.sync_api import Page, expect
+from playwright.sync_api import expect
+from .base_page import BasePage
 
-
-class HomePage:
+class HomePage(BasePage):
     ORIGIN = "https://www.karma.de"
     URL = f"{ORIGIN}/home"
 
-    def __init__(self, page: Page):
-        self.page = page
-
-    # --- Navigation ---
+    # Einheitliche Navigation (wartet auf networkidle + Cookies)
     def open(self):
-        self.page.goto(self.URL, wait_until="domcontentloaded")
+        self.navigate_to(self.URL, wait_until="networkidle")
 
-    # --- Cookies ---
-    def accept_cookies_if_present(self):
-        """
-        Akzeptiert ggf. den Cookie-Dialog.
-        ARIA-first, mit Text-Fallback und einfachem iFrame-Scan.
-        """
-        # 1) ARIA-first
-        btn = self.page.get_by_role(
-            "button",
-            name=re.compile(r"(akzept|accept|zustimm|einverstanden)", re.I),
-        )
-        if btn.count() == 0:
-            # 2) Text-Fallback
-            btn = self.page.locator(
-                "button:has-text('Akzept'), button:has-text('Accept'), button:has-text('Einverstanden')"
-            )
-
-        # 3) iFrame-Fallback (z. B. Consent-Provider)
-        if btn.count() == 0:
-            for f in self.page.frames:
-                f_url = (f.url or "").lower()
-                if any(x in f_url for x in ["consent", "cookie"]):
-                    fbtn = f.get_by_role(
-                        "button",
-                        name=re.compile(r"(akzept|accept|zustimm|einverstanden)", re.I),
-                    )
-                    if fbtn.count() == 0:
-                        fbtn = f.locator(
-                            "button:has-text('Akzept'), button:has-text('Accept'), button:has-text('Einverstanden')"
-                        )
-                    if fbtn.count() > 0:
-                        expect(fbtn.first).to_be_visible()
-                        fbtn.first.click()
-                        return
-
-        if btn.count() > 0:
-            expect(btn.first).to_be_visible()
-            btn.first.click()
-
-    # --- Hero / Headings ---
+    # Robust: warte bis ein Heading-Kandidat im DOM ist; bevorzuge <h1>, sonst role=heading
     def hero_heading(self):
-        """
-        Liefert den ersten sinnvollen Heading-Kandidaten.
-        Semantik vor Text, bevorzugt innerhalb von <main>.
-        """
-        self.page.wait_for_load_state("domcontentloaded")
-        cand = self.page.locator(
-            "main h1, main [role='heading'], h1, [role='heading'], h2"
-        ).first
-        return cand
+        try:
+            # DOM-Anwesenheit (nicht zwingend sichtbar) verhindert Race-Conditions
+            self.page.wait_for_selector("h1, [role='heading']", state="attached", timeout=self.DEFAULT_TIMEOUT)
+        except Exception:
+            pass
+        # Erst echtes H1, sonst beliebiges role=heading
+        return self.page.locator("h1").first.or_(self.page.get_by_role("heading").first)
 
-    # --- Primärer CTA (mit Scoping) ---
+    # Primärer CTA mit Scoping, ARIA-first und Fallbacks
     def primary_cta(self):
-        # 1) Nach Link-Name (zugänglich)
-        loc = self.page.get_by_role(
-            "link",
-            name=re.compile(r"(kontakt|kontaktieren|demo|mehr|termin|anfragen)", re.I),
-        )
+        name_re = re.compile(r"(kontakt|kontaktieren|demo|mehr|termin|anfrage|angebot|jetzt|erfahren)", re.I)
 
-        # 2) Fallback: href-Muster
+        # Scope: Header/Hero (robuster gegen False Positives)
+        scope = self.page.locator("header, [role='banner'], main, section").first
+
+        loc = scope.get_by_role("link", name=name_re)
         if loc.count() == 0:
-            loc = self.page.locator(
-                "a[href*='kontakt'], a[href*='contact'], a[href*='demo'], a[href*='termin'], a[href*='anfrage']"
+            loc = scope.get_by_role("button", name=name_re)
+
+        if loc.count() == 0:
+            loc = scope.locator(
+                "a[href*='kontakt'], a[href*='contact'], a[href*='demo'], "
+                "a[href*='termin'], a[href*='anfrage'], a[href*='angebot']"
             )
 
-        # 3) Letzter Fallback: irgendein sichtbarer Link/Button im sichtbaren Bereich
         if loc.count() == 0:
-            loc = self.page.locator("a:visible, button:visible")
+            # Letzter Fallback: irgendein sichtbarer Link/Button im Scope
+            loc = scope.locator("a:visible, button:visible")
 
         return loc
-
-
