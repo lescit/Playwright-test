@@ -119,6 +119,15 @@ pytest -rs
 # Debugging von xfailed Tests:
 pytest -rx
 ```
+### Hinweise zum Ausführen der Tests
+
+Falls beim Starten des Chromium-Browsers Fehler auftreten (z. B. `TargetClosedError` oder Absturz), können die Tests mit deaktivierter GPU und Software-Rendering gestartet werden:
+
+```bash
+PLAYWRIGHT_CHROMIUM_ARGS="--disable-gpu --use-gl=swiftshader" pytest
+
+```
+
 ---
 ## Testergebnisse
 Aktueller Status: 7 von 8 Tests bestanden, 1 übersprungen
